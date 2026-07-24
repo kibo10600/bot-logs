@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const express = require('express');
 
 const client = new Client({
@@ -6,8 +6,7 @@ const client = new Client({
 });
 
 const TOKEN = process.env.DISCORD_TOKEN;
-const CHANNEL_ID = "1530305066593161346"
-;
+const CHANNEL_ID = "1530305066593161346";
 
 const app = express();
 app.use(express.json());
@@ -18,16 +17,30 @@ client.once('ready', () => {
 
 // Route appelée par Roblox
 app.post('/log-player', async (req, res) => {
-    const { message } = req.body;
+    // On récupère toutes les infos envoyées par Roblox
+    const { username, userId, accountAge, creationDate } = req.body;
     
-    if (!message) {
-        return res.status(400).send({ error: "Message manquant" });
+    if (!username) {
+        return res.status(400).send({ error: "Nom d'utilisateur manquant" });
     }
 
     try {
         const channel = await client.channels.fetch(CHANNEL_ID);
         if (channel) {
-            await channel.send(message);
+            // Création de l'Embed stylé
+            const embed = new EmbedBuilder()
+                .setColor(0x57F287) // Couleur verte sur le côté
+                .setTitle('🟩 Nouveau joueur connecté')
+                .setDescription(`**${username}** vient de rejoindre la partie !`)
+                .addFields(
+                    { name: '👤 ID', value: `${userId}`, inline: true },
+                    { name: '📅 Compte créé le', value: `${creationDate || 'Inconnu'}`, inline: true },
+                    { name: '⏳ Ancienneté du compte', value: `${accountAge || 'Inconnue'}`, inline: false }
+                )
+                .setFooter({ text: 'Système de logs Roblox' })
+                .setTimestamp();
+
+            await channel.send({ embeds: [embed] });
             res.status(200).send({ success: true });
         } else {
             res.status(404).send({ error: "Salon introuvable" });
