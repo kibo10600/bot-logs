@@ -17,25 +17,40 @@ client.once('ready', () => {
 
 // Route appelée par Roblox
 app.post('/log-player', async (req, res) => {
-    // On récupère toutes les infos envoyées par Roblox
-    const { username, userId, accountAge, creationDate } = req.body;
+    const { username, userId, accountAge } = req.body;
     
     if (!username) {
         return res.status(400).send({ error: "Nom d'utilisateur manquant" });
     }
 
     try {
+        // Récupérer la vraie date de création via l'API publique de Roblox
+        let creationDateFormatted = "Inconnue";
+        try {
+            const response = await fetch(`https://users.roblox.com/v1/users/${userId}`);
+            const userData = await response.json();
+            if (userData && userData.created) {
+                const dateObj = new Date(userData.created);
+                creationDateFormatted = dateObj.toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            }
+        } catch (e) {
+            console.error("Erreur lors de la récupération de la date Roblox :", e);
+        }
+
         const channel = await client.channels.fetch(CHANNEL_ID);
         if (channel) {
-            // Création de l'Embed stylé
             const embed = new EmbedBuilder()
-                .setColor(0x57F287) // Couleur verte sur le côté
+                .setColor(0x57F287)
                 .setTitle('🟩 Nouveau joueur connecté')
                 .setDescription(`**${username}** vient de rejoindre la partie !`)
                 .addFields(
                     { name: '👤 ID', value: `${userId}`, inline: true },
-                    { name: '📅 Compte créé le', value: `${creationDate || 'Inconnu'}`, inline: true },
-                    { name: '⏳ Ancienneté du compte', value: `${accountAge || 'Inconnue'}`, inline: false }
+                    { name: '📅 Compte créé le', value: `${creationDateFormatted}`, inline: true },
+                    { name: '⏳ Ancienneté du compte', value: `${accountAge}`, inline: false }
                 )
                 .setFooter({ text: 'Système de logs Roblox' })
                 .setTimestamp();
