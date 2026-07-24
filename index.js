@@ -6,7 +6,6 @@ const client = new Client({
 });
 
 const TOKEN = process.env.DISCORD_TOKEN;
-
 const CHANNEL_ID = "1530305066593161346"
 ;
 
