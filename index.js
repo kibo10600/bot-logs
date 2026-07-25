@@ -138,34 +138,68 @@ app.post('/log-intrusion', async (req, res) => {
     }
 });
 
-// 3. Nouvelle route : Arrivée / Lancement de Spectacle
+// 3. Route : Joueur qui rejoint la Map Spectacle
 app.post('/log-spectacle', async (req, res) => {
-    const { titreSpectacle, responsable } = req.body;
-
-    if (!titreSpectacle) {
-        return res.status(400).send({ error: "Titre du spectacle manquant" });
+    const { username, userId } = req.body;
+    
+    if (!username) {
+        return res.status(400).send({ error: "Nom d'utilisateur manquant" });
     }
 
     try {
+        let creationDateFormatted = "Inconnue";
+        let ageString = "Inconnue";
+
+        const userData = await getRobloxUser(userId);
+        if (userData && userData.created) {
+            const createdDate = new Date(userData.created);
+            const now = new Date();
+
+            creationDateFormatted = createdDate.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            let years = now.getFullYear() - createdDate.getFullYear();
+            let months = now.getMonth() - createdDate.getMonth();
+            let days = now.getDate() - createdDate.getDate();
+
+            if (days < 0) {
+                months--;
+                const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                days += prevMonth.getDate();
+            }
+
+            if (months < 0) {
+                years--;
+                months += 12;
+            }
+
+            ageString = `${years} ans, ${months} mois, ${days} jours`;
+        }
+
         const channel = await client.channels.fetch(CHANNEL_ID_SPECTACLE);
         if (channel) {
             const embed = new EmbedBuilder()
-                .setColor(0xFEE75C) // Jaune
-                .setTitle('🎭 LANCEMENT DE SPECTACLE')
-                .setDescription(`Le spectacle **${titreSpectacle}** vient d'être lancé !`)
+                .setColor(0xFEE75C) // Jaune / Or pour le thème spectacle
+                .setTitle('🎭 Joueur rejoint la Map Spectacle')
+                .setDescription(`**${username}** vient de rejoindre la map du spectacle !`)
                 .addFields(
-                    { name: '👑 Responsable / Lancé par', value: `${responsable || 'Inconnu'}`, inline: true }
+                    { name: '👤 ID', value: `${userId}`, inline: true },
+                    { name: '📅 Compte créé le', value: `${creationDateFormatted}`, inline: true },
+                    { name: '⏳ Ancienneté du compte', value: `${ageString}`, inline: false }
                 )
-                .setFooter({ text: 'Gestion des Spectacles - DreamShow Resort' })
+                .setFooter({ text: 'Système de logs Map Spectacle' })
                 .setTimestamp();
 
             await channel.send({ embeds: [embed] });
             res.status(200).send({ success: true });
         } else {
-            res.status(404).send({ error: "Salon de spectacle introuvable" });
+            res.status(404).send({ error: "Salon spectacle introuvable" });
         }
     } catch (error) {
-        console.error("Erreur lors de l'envoi du spectacle :", error);
+        console.error("Erreur lors de l'envoi du log spectacle :", error);
         res.status(500).send({ error: "Erreur interne" });
     }
 });
