@@ -7,7 +7,11 @@ const client = new Client({
 });
 
 const TOKEN = process.env.DISCORD_TOKEN;
-const CHANNEL_ID = "1530305066593161346";
+
+// IDs de tes différents salons Discord
+const CHANNEL_ID_PLAYERS = "1530305066593161346"; // Salon des connexions de joueurs
+const CHANNEL_ID_INTRUSION = "1530600211976818828"; // Salon des alertes régie
+const CHANNEL_ID_SPECTACLE = "1530603678531059923"; // Salon des arrivées de spectacles
 
 const app = express();
 app.use(express.json());
@@ -35,7 +39,7 @@ function getRobloxUser(userId) {
     });
 }
 
-// Route appelée par Roblox
+// 1. Route existante : Connexion des joueurs
 app.post('/log-player', async (req, res) => {
     const { username, userId } = req.body;
     
@@ -76,7 +80,7 @@ app.post('/log-player', async (req, res) => {
             ageString = `${years} ans, ${months} mois, ${days} jours`;
         }
 
-        const channel = await client.channels.fetch(CHANNEL_ID);
+        const channel = await client.channels.fetch(CHANNEL_ID_PLAYERS);
         if (channel) {
             const embed = new EmbedBuilder()
                 .setColor(0x57F287)
@@ -97,6 +101,71 @@ app.post('/log-player', async (req, res) => {
         }
     } catch (error) {
         console.error("Erreur lors de l'envoi :", error);
+        res.status(500).send({ error: "Erreur interne" });
+    }
+});
+
+// 2. Nouvelle route : Intrusion en Régie
+app.post('/log-intrusion', async (req, res) => {
+    const { username, userId, details } = req.body;
+
+    if (!username) {
+        return res.status(400).send({ error: "Nom d'utilisateur manquant" });
+    }
+
+    try {
+        const channel = await client.channels.fetch(CHANNEL_ID_INTRUSION);
+        if (channel) {
+            const embed = new EmbedBuilder()
+                .setColor(0xED4245) // Rouge
+                .setTitle('🚨 ALERTE : INTRUSION RÉGIE')
+                .setDescription(`**${username}** a tenté d'accéder à une zone restreinte !`)
+                .addFields(
+                    { name: '👤 ID', value: `${userId || 'Inconnu'}`, inline: true },
+                    { name: '⚠️ Détails', value: `${details || 'Tentative d\'accès non autorisée'}`, inline: false }
+                )
+                .setFooter({ text: 'Sécurité Régie - DreamShow Resort' })
+                .setTimestamp();
+
+            await channel.send({ embeds: [embed] });
+            res.status(200).send({ success: true });
+        } else {
+            res.status(404).send({ error: "Salon d'intrusion introuvable" });
+        }
+    } catch (error) {
+        console.error("Erreur lors de l'envoi de l'intrusion :", error);
+        res.status(500).send({ error: "Erreur interne" });
+    }
+});
+
+// 3. Nouvelle route : Arrivée / Lancement de Spectacle
+app.post('/log-spectacle', async (req, res) => {
+    const { titreSpectacle, responsable } = req.body;
+
+    if (!titreSpectacle) {
+        return res.status(400).send({ error: "Titre du spectacle manquant" });
+    }
+
+    try {
+        const channel = await client.channels.fetch(CHANNEL_ID_SPECTACLE);
+        if (channel) {
+            const embed = new EmbedBuilder()
+                .setColor(0xFEE75C) // Jaune
+                .setTitle('🎭 LANCEMENT DE SPECTACLE')
+                .setDescription(`Le spectacle **${titreSpectacle}** vient d'être lancé !`)
+                .addFields(
+                    { name: '👑 Responsable / Lancé par', value: `${responsable || 'Inconnu'}`, inline: true }
+                )
+                .setFooter({ text: 'Gestion des Spectacles - DreamShow Resort' })
+                .setTimestamp();
+
+            await channel.send({ embeds: [embed] });
+            res.status(200).send({ success: true });
+        } else {
+            res.status(404).send({ error: "Salon de spectacle introuvable" });
+        }
+    } catch (error) {
+        console.error("Erreur lors de l'envoi du spectacle :", error);
         res.status(500).send({ error: "Erreur interne" });
     }
 });
