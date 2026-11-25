@@ -9,9 +9,9 @@ const client = new Client({
 const TOKEN = process.env.DISCORD_TOKEN;
 
 // IDs de tes différents salons Discord
-const CHANNEL_ID_PLAYERS = "1530305066593161346"; // Salon des connexions de joueurs
-const CHANNEL_ID_INTRUSION = "1530600211976818828"; // Salon des alertes régie
-const CHANNEL_ID_SPECTACLE = "1530603678531059923"; // Salon des arrivées de spectacles
+const CHANNEL_ID_PLAYERS = "1575118891716317255"; // Salon des connexions de joueurs
+const CHANNEL_ID_INTRUSION = "1575120179803721738"; // Salon des alertes régie
+const CHANNEL_ID_SPECTACLE = "1575142386604970105"; // Salon des arrivées de spectacles
 
 const app = express();
 app.use(express.json());
